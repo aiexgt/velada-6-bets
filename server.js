@@ -82,31 +82,80 @@ function calculateState(baseState, incomingPredictions) {
   };
 }
 
-// Leer estado general
+// Modificar para asegurar que los participantes iniciales tengan token si no lo tienen
+if (fs.existsSync(DATA_FILE)) {
+  let initialData = JSON.parse(fs.readFileSync(DATA_FILE));
+  let modified = false;
+  initialData.participants.forEach(p => {
+    if (!p.token) {
+      p.token = "t_" + Math.random().toString(36).substr(2, 9);
+      modified = true;
+    }
+  });
+  if (modified) fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+}
+
+// Leer estado general (Público) - SE OCULTAN LOS TOKENS
 app.get('/api/data', (req, res) => {
   fs.readFile(DATA_FILE, 'utf8', (err, data) => {
-    if (err) {
-      console.error('Error leyendo data.json:', err);
-      return res.status(500).json({ error: 'Error del servidor' });
-    }
+    if (err) return res.status(500).json({ error: 'Error del servidor' });
+    const state = JSON.parse(data);
+    state.participants.forEach(p => delete p.token); // Strip tokens
+    res.json(state);
+  });
+});
+
+// Leer datos completos (Admin protegido)
+app.get('/api/admin/data', basicAuth, (req, res) => {
+  fs.readFile(DATA_FILE, 'utf8', (err, data) => {
+    if (err) return res.status(500).json({ error: 'Error del servidor' });
     res.json(JSON.parse(data));
   });
 });
 
-// Endpoint público para enviar Votos
+// Obtener info del usuario actual basado en el token
+app.get('/api/me', (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.status(400).json({error: 'Falta token'});
+  fs.readFile(DATA_FILE, 'utf8', (err, data) => {
+    if (err) return res.status(500).json({ error: 'Error del servidor' });
+    const state = JSON.parse(data);
+    const participant = state.participants.find(p => p.token === token);
+    if (!participant) return res.status(404).json({error: 'Token inválido o expirado'});
+    
+    // Le enviamos su info sin exponer los demás
+    res.json(participant);
+  });
+});
+
+// Endpoint público/privado para enviar Votos
 app.post('/api/vote', (req, res) => {
+  const token = req.body.token;
+  const participantId = req.body.participantId;
   const incomingPredictions = req.body.predictions || [];
   
+  if (!token || !participantId) return res.status(400).json({error: 'Datos incompletos'});
+
   fs.readFile(DATA_FILE, 'utf8', (err, data) => {
     if (err) return res.status(500).json({ error: 'Error leyendo datos base' });
-    
     const serverState = JSON.parse(data);
     
-    // Recalcula saldos tomando el 'State' oficial (settings, users, fights)
-    const validatedData = calculateState(serverState, incomingPredictions);
+    // Validación de seguridad estricta
+    const participant = serverState.participants.find(p => p.id === participantId && p.token === token);
+    if (!participant) return res.status(403).json({error: 'Acceso denegado. Token incorrecto.'});
+
+    // Validar que no se estén enviando votos de otras personas de forma tramposa
+    const validPredictions = incomingPredictions.filter(p => p.participantId === participantId);
+
+    // Mantenemos las predicciones del resto intactas
+    const otherPredictions = serverState.predictions.filter(p => p.participantId !== participantId);
+    const updatedPredictions = [...otherPredictions, ...validPredictions];
     
+    const validatedData = calculateState(serverState, updatedPredictions);
     fs.writeFile(DATA_FILE, JSON.stringify(validatedData, null, 2), (err) => {
       if (err) return res.status(500).json({ error: 'Error guardando votos' });
+      // Remover tokens al responder
+      validatedData.participants.forEach(p => delete p.token);
       res.json({ success: true, data: validatedData });
     });
   });

@@ -15,10 +15,13 @@ let state = {
 const displayBaseBet = document.getElementById('display-base-bet');
 const dashboardTbody = document.getElementById('dashboard-tbody');
 const dashboardFightsGrid = document.getElementById('dashboard-fights-grid');
-const voteParticipantSelect = document.getElementById('vote-participant');
 const votingFightsContainer = document.getElementById('voting-fights-container');
 const adminFightsList = document.getElementById('admin-fights-list');
+const adminParticipantsList = document.getElementById('admin-participants-list');
 const toastEl = document.getElementById('toast');
+
+let myToken = new URLSearchParams(window.location.search).get('token');
+let myParticipantId = null;
 
 // Navigation logic removed since we use actual links now
 
@@ -38,10 +41,39 @@ function showToast(msg, isError = false) {
 // Global API sync
 async function loadState() {
   try {
-    const res = await fetch(API_DATA_URL);
+    let endpoint = API_DATA_URL;
+    if (document.getElementById('admin')) {
+      endpoint = API_ADMIN_URL; // We fetch full state
+    }
+    
+    // Si estamos en votos, primero validamos el token
+    if (document.getElementById('votos')) {
+      if (!myToken) {
+        throw new Error('NoToken');
+      }
+      const meRes = await fetch(`/api/me?token=${myToken}`);
+      if (!meRes.ok) throw new Error('InvalidToken');
+      const meData = await meRes.json();
+      myParticipantId = meData.id;
+      
+      // We will render my title
+      const pTitle = document.createElement('h2');
+      pTitle.style.color = "var(--success)";
+      pTitle.textContent = `Votando como: ${meData.name}`;
+      const header = document.querySelector('#votos header');
+      if(header && !header.querySelector('h2')) header.appendChild(pTitle);
+    }
+
+    const res = await fetch(endpoint);
     state = await res.json();
     renderAll();
   } catch (error) {
+    if (error.message === 'NoToken' || error.message === 'InvalidToken') {
+      if (votingFightsContainer) {
+        votingFightsContainer.innerHTML = '<div class="glass-panel"><h3 style="color:var(--accent-red)">Acceso Denegado</h3><p>Necesitas usar tu Enlace Mágico personal para votar.</p></div>';
+      }
+      return;
+    }
     console.error('Error fetching state:', error);
     showToast('Error cargando datos', true);
   }
@@ -86,7 +118,9 @@ function renderAll() {
   }
 
   if (document.getElementById('votos')) {
-    renderVoteParticipants();
+    // Ya no renderizamos el select de participantes
+    const voteFormPanel = document.querySelector('.form-panel');
+    if (voteFormPanel) voteFormPanel.style.display = 'none';
     renderVoteFights();
   }
 
@@ -154,29 +188,9 @@ function renderDashboardFights() {
   });
 }
 
-function renderVoteParticipants() {
-  if (!voteParticipantSelect) return;
-  const currentVal = voteParticipantSelect.value;
-  voteParticipantSelect.innerHTML = '<option value="">Selecciona tu usuario...</option>';
-  state.participants.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    voteParticipantSelect.appendChild(opt);
-  });
-  if (state.participants.some(p => p.id === currentVal)) {
-    voteParticipantSelect.value = currentVal;
-  }
-}
-
 function renderVoteFights() {
-  if (!votingFightsContainer || !voteParticipantSelect) return;
+  if (!votingFightsContainer || !myParticipantId) return;
   votingFightsContainer.innerHTML = '';
-  const participantId = voteParticipantSelect.value;
-  if (!participantId) {
-    votingFightsContainer.innerHTML = '<p style="color:var(--text-muted);">Selecciona tu usuario arriba para ver y hacer tus predicciones.</p>';
-    return;
-  }
 
   const pendingFights = state.fights.filter(f => f.status === 'pending');
   if (pendingFights.length === 0) {
@@ -186,7 +200,7 @@ function renderVoteFights() {
 
   pendingFights.forEach(f => {
     // Buscar si ya tiene predicción
-    const existingPred = state.predictions.find(p => p.fightId === f.id && p.participantId === participantId);
+    const existingPred = state.predictions.find(p => p.fightId === f.id && p.participantId === myParticipantId);
     
     const card = document.createElement('div');
     card.className = 'vote-card';
@@ -232,32 +246,60 @@ function renderVoteFights() {
         return;
       }
 
-      await loadState(); // Ensure we have latest before mutating
-      const pId = voteParticipantSelect.value;
+      const backupState = JSON.parse(JSON.stringify(state)); // Backup in case of error
       
-      // Remove previous if exists
-      state.predictions = state.predictions.filter(p => !(p.fightId === fightId && p.participantId === pId));
-      
+      // Remove previous if exists, just for local optimistic update
+      state.predictions = state.predictions.filter(p => !(p.fightId === fightId && p.participantId === myParticipantId));
       state.predictions.push({
-        participantId: pId,
+        participantId: myParticipantId,
         fightId: fightId,
         winner: winner,
         reason: reason
       });
 
       try {
-        await saveState(API_VOTE_URL);
+        const payload = {
+          token: myToken,
+          participantId: myParticipantId,
+          predictions: state.predictions.filter(p => p.participantId === myParticipantId)
+        };
+        const res = await fetch(API_VOTE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Error saving');
+        const rData = await res.json();
+        state = rData.data; // Re-sync local state
         showToast('Predicción guardada!');
-      } catch (err) {}
+      } catch (err) {
+        state = backupState; // Rollback
+        showToast('Error al guardar tu voto', true);
+      }
     });
   });
 }
 
-if (voteParticipantSelect) {
-  voteParticipantSelect.addEventListener('change', renderVoteFights);
-}
-
 function renderAdminFights() {
+  if (adminParticipantsList) {
+    adminParticipantsList.innerHTML = '';
+    if (state.participants.length === 0) {
+      adminParticipantsList.innerHTML = '<p style="color:var(--text-muted);">No hay participantes aún.</p>';
+    } else {
+      const baseUrl = window.location.origin + '/votos.html?token=';
+      state.participants.forEach(p => {
+        const item = document.createElement('div');
+        item.style.padding = '10px';
+        item.style.borderBottom = '1px solid var(--border-glass)';
+        item.innerHTML = `
+          <strong>${p.name}:</strong> 
+          <input type="text" readonly value="${baseUrl}${p.token}" style="width:70%; margin-left:10px; font-size:0.85rem;" onclick="this.select(); document.execCommand('copy'); showToast('Enlace copiado!')">
+        `;
+        adminParticipantsList.appendChild(item);
+      });
+    }
+  }
+
   if (!adminFightsList) return;
   adminFightsList.innerHTML = '';
   const pendingFights = state.fights.filter(f => f.status === 'pending');
@@ -353,6 +395,7 @@ if (formParticipant) {
       await loadState();
       state.participants.push({
         id: "p_" + generateId(),
+        token: "t_" + generateId() + generateId(),
         name: name,
         points: 0,
         totalPaid: 0,
