@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RingKings | Votos</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Sidebar / Navigation -->
+  <nav class="sidebar">
+    <div class="logo">
+      <span class="neon-text">RINGKINGS</span>
+      <p>BETTING POOL</p>
+    </div>
+    <ul class="nav-links">
+      <li><a href="/" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">📊</i> Dashboard</a></li>
+      <li class="active"><a href="/votos.html" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">🥊</i> Votos</a></li>
+      <li><a href="/admin.html" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">⚙️</i> Admin</a></li>
+    </ul>
+    <div class="base-bet-info">
+      Apuesta Base: <span id="display-base-bet" class="highlight">Q0</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="content">
+
+    <!-- Votos Section -->
+    <section id="votos" class="page active">
+      <header>
+        <h1>Mis Predicciones</h1>
+        <p>Asegura tus votos antes de que empiece la pelea</p>
+      </header>
+
+      <div class="glass-panel form-panel">
+        <div class="form-group inline">
+          <label for="vote-participant">¿Quién eres?</label>
+          <select id="vote-participant">
+            <option value="">Selecciona tu usuario...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="voting-fights-container" class="voting-list">
+        <!-- Renderizado dinámico -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast">Notificación</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

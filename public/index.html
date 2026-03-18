@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RingKings | Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Sidebar / Navigation -->
+  <nav class="sidebar">
+    <div class="logo">
+      <span class="neon-text">RINGKINGS</span>
+      <p>BETTING POOL</p>
+    </div>
+    <ul class="nav-links">
+      <li class="active"><a href="/" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">📊</i> Dashboard</a></li>
+      <li><a href="/votos.html" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">🥊</i> Votos</a></li>
+      <li><a href="/admin.html" style="text-decoration:none; color:inherit; display:flex; gap:10px; width:100%;"><i class="icon">⚙️</i> Admin</a></li>
+    </ul>
+    <div class="base-bet-info">
+      Apuesta Base: <span id="display-base-bet" class="highlight">Q0</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="content">
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="page active">
+      <header>
+        <h1>Tabla de Posiciones</h1>
+        <p>Acompaña el rendimiento de todos los participantes</p>
+      </header>
+      
+      <div class="table-container fade-in">
+        <table class="glass-table">
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Usuario</th>
+              <th>Puntos</th>
+              <th>Total Pagado</th>
+              <th>Total Ganado</th>
+              <th>Balance Neto</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-tbody">
+            <!-- Renderizado dinámico -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="upcoming-fights fade-in">
+        <h2>Próximas Peleas</h2>
+        <div id="dashboard-fights-grid" class="fights-grid">
+          <!-- Renderizado dinámico -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast">Notificación</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

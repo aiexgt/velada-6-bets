@@ -1,0 +1,13 @@
+{
+  "name": "bets-velada",
+  "version": "1.0.0",
+  "description": "Una aplicación web completa para gestionar una porra de boxeo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
