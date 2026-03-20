@@ -286,6 +286,7 @@ input:focus, select:focus {
 
 .btn-danger { background: var(--accent-red); color: #fff; }
 .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 4px 15px var(--accent-red-glow); }
+.btn-success { background: var(--success) !important; color: #fff !important; pointer-events: none; }
 
 .btn-submit-bets {
   width: 100%;
@@ -584,6 +585,8 @@ input:focus, select:focus {
   .toast {
     left: 20px;
     right: 20px;
+    bottom: calc(90px + env(safe-area-inset-bottom));
     text-align: center;
+    z-index: 10000;
   }
 }

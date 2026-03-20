@@ -271,6 +271,16 @@ function renderVoteFights() {
         if (!res.ok) throw new Error('Error saving');
         const rData = await res.json();
         state = rData.data; // Re-sync local state
+        
+        // Feedback visual en el botón
+        const originalText = btn.textContent;
+        btn.textContent = '¡Guardado!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('btn-success');
+        }, 2500);
+        
         showToast('Predicción guardada!');
       } catch (err) {
         state = backupState; // Rollback
