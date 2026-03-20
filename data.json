@@ -2,17 +2,7 @@
   "settings": {
     "baseBet": 10
   },
-  "participants": [
-    {
-      "id": "p_lbxoo878q",
-      "token": "t_803157l1g6llsku36s",
-      "name": "Josue Lima",
-      "points": 0,
-      "totalPaid": 0,
-      "totalWon": 0,
-      "netBalance": 0
-    }
-  ],
+  "participants": [],
   "fights": [],
   "predictions": []
 }
