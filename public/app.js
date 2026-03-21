@@ -172,8 +172,7 @@ function renderDashboardFights() {
     
     let winnerText = '';
     if (isClosed) {
-      if (f.winner === 'empate') winnerText = 'EMPATE';
-      else winnerText = f.winner === 'A' ? `GANADOR: ${f.fighterA}` : `GANADOR: ${f.fighterB}`;
+      winnerText = f.winner === 'A' ? `GANADOR: ${f.fighterA}` : `GANADOR: ${f.fighterB}`;
       if (f.reason) winnerText += ` (${f.reason})`;
     }
 
@@ -181,16 +180,13 @@ function renderDashboardFights() {
 
     const votesA = state.predictions.filter(p => p.fightId === f.id && p.winner === 'A').length;
     const votesB = state.predictions.filter(p => p.fightId === f.id && p.winner === 'B').length;
-    const votesTie = state.predictions.filter(p => p.fightId === f.id && p.winner === 'empate').length;
-    const totalVotes = votesA + votesB + votesTie;
+    const totalVotes = votesA + votesB;
 
     let oddsHtml = '';
     if (totalVotes > 0 && !isClosed) {
-      let tieText = votesTie > 0 ? `<span style="color:#aaa;">Empate: ${votesTie}</span>` : `<span></span>`;
       oddsHtml = `
         <div class="odds-container" style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:0.75rem;">
           <span style="color:#ff6b6b;">${votesA} VOTOS</span>
-          ${tieText}
           <span style="color:#4ecdc4;">${votesB} VOTOS</span>
         </div>
       `;
@@ -247,15 +243,16 @@ function renderVoteFights() {
 
     card.innerHTML = `
       ${cardCover}
-      <div class="fight-title">
-        <span style="color:#ff6b6b">${f.fighterA}</span> VS <span style="color:#4ecdc4">${f.fighterB}</span>
+      <div class="fighter-names">
+        <span class="fighter-a">${f.fighterA}</span>
+        <span style="font-size: 1rem; color: #777; align-self: center;">VS</span>
+        <span class="fighter-b">${f.fighterB}</span>
       </div>
       <div class="vote-controls">
         <select id="vote-winner-${f.id}" ${!isVotingOpen ? 'disabled' : ''}>
           <option value="">Ganador...</option>
           <option value="A">${f.fighterA}</option>
           <option value="B">${f.fighterB}</option>
-          <option value="empate">Empate</option>
         </select>
         <select id="vote-reason-${f.id}" ${!isVotingOpen ? 'disabled' : ''}>
           <option value="">Razón...</option>
@@ -375,7 +372,6 @@ function renderAdminFights() {
           <option value="">¿Quién ganó?</option>
           <option value="A">${f.fighterA}</option>
           <option value="B">${f.fighterB}</option>
-          <option value="empate">Empate</option>
         </select>
         <select id="close-reason-${f.id}" class="w-50">
           <option value="">¿Cómo?</option>
