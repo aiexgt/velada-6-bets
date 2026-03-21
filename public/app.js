@@ -173,15 +173,36 @@ function renderDashboardFights() {
       if (f.reason) winnerText += ` (${f.reason})`;
     }
 
+    const cardCover = f.imgFight ? `<div class="fight-card-cover" style="background-image: url('${f.imgFight}');"></div>` : '';
+
+    const votesA = state.predictions.filter(p => p.fightId === f.id && p.winner === 'A').length;
+    const votesB = state.predictions.filter(p => p.fightId === f.id && p.winner === 'B').length;
+    const votesTie = state.predictions.filter(p => p.fightId === f.id && p.winner === 'empate').length;
+    const totalVotes = votesA + votesB + votesTie;
+
+    let oddsHtml = '';
+    if (totalVotes > 0 && !isClosed) {
+      let tieText = votesTie > 0 ? `<span style="color:#aaa;">Empate: ${votesTie}</span>` : `<span></span>`;
+      oddsHtml = `
+        <div class="odds-container" style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:0.75rem;">
+          <span style="color:#ff6b6b;">${votesA} VOTOS</span>
+          ${tieText}
+          <span style="color:#4ecdc4;">${votesB} VOTOS</span>
+        </div>
+      `;
+    }
+
     card.innerHTML = `
+      ${cardCover}
       <div class="status-badge ${isClosed ? 'status-closed' : 'status-pending'}">
         ${isClosed ? 'CERRADA' : 'PENDIENTE'}
       </div>
       <div class="fighter-names">
         <span class="fighter-a">${f.fighterA}</span>
-        <span style="font-size: 1rem; color: #777;">VS</span>
+        <span style="font-size: 1rem; color: #777; align-self: center;">VS</span>
         <span class="fighter-b">${f.fighterB}</span>
       </div>
+      ${oddsHtml}
       ${isClosed ? `<p style="color:var(--success); font-weight:bold; margin-top:10px;">🏆 ${winnerText}</p>` : ''}
     `;
     dashboardFightsGrid.appendChild(card);
@@ -204,7 +225,10 @@ function renderVoteFights() {
     
     const card = document.createElement('div');
     card.className = 'vote-card';
+    const cardCover = f.imgFight ? `<div class="fight-card-cover" style="background-image: url('${f.imgFight}');"></div>` : '';
+
     card.innerHTML = `
+      ${cardCover}
       <div class="fight-title">
         <span style="color:#ff6b6b">${f.fighterA}</span> VS <span style="color:#4ecdc4">${f.fighterB}</span>
       </div>
@@ -427,12 +451,15 @@ if (formFight) {
     e.preventDefault();
     const fa = document.getElementById('admin-fighter-a').value.trim();
     const fb = document.getElementById('admin-fighter-b').value.trim();
+    const imgFight = document.getElementById('admin-img-fight') ? document.getElementById('admin-img-fight').value.trim() : null;
+
     if (fa && fb) {
       await loadState();
       state.fights.push({
         id: "f_" + generateId(),
         fighterA: fa,
         fighterB: fb,
+        imgFight: imgFight,
         status: 'pending',
         winner: null,
         reason: null
@@ -441,6 +468,7 @@ if (formFight) {
         await saveState(API_ADMIN_URL);
         document.getElementById('admin-fighter-a').value = '';
         document.getElementById('admin-fighter-b').value = '';
+        if(document.getElementById('admin-img-fight')) document.getElementById('admin-img-fight').value = '';
         showToast('Pelea agregada');
       } catch(err){}
     }
