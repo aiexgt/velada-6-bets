@@ -140,6 +140,11 @@ app.post('/api/vote', (req, res) => {
     if (err) return res.status(500).json({ error: 'Error leyendo datos base' });
     const serverState = JSON.parse(data);
     
+    // Validación de estado general
+    if (serverState.settings && serverState.settings.votingEnabled === false) {
+      return res.status(403).json({ error: 'Las votaciones están cerradas por el administrador' });
+    }
+    
     // Validación de seguridad estricta
     const participant = serverState.participants.find(p => p.id === participantId && p.token === token);
     if (!participant) return res.status(403).json({error: 'Acceso denegado. Token incorrecto.'});

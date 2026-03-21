@@ -126,8 +126,12 @@ function renderAll() {
 
   if (document.getElementById('admin')) {
     const adminBetInput = document.getElementById('admin-base-bet');
+    const adminVotingEnabled = document.getElementById('admin-voting-enabled');
     if (adminBetInput && document.activeElement !== adminBetInput) {
       adminBetInput.value = state.settings.baseBet;
+    }
+    if (adminVotingEnabled && document.activeElement !== adminVotingEnabled) {
+      adminVotingEnabled.checked = state.settings.votingEnabled !== false;
     }
     renderAdminFights();
   }
@@ -213,6 +217,20 @@ function renderVoteFights() {
   if (!votingFightsContainer || !myParticipantId) return;
   votingFightsContainer.innerHTML = '';
 
+  const isVotingOpen = state.settings.votingEnabled !== false;
+  if (!isVotingOpen) {
+    const msg = document.createElement('div');
+    msg.style.padding = '15px';
+    msg.style.background = 'rgba(255,107,107,0.1)';
+    msg.style.color = 'var(--accent-red)';
+    msg.style.border = '1px solid var(--accent-red)';
+    msg.style.borderRadius = '8px';
+    msg.style.textAlign = 'center';
+    msg.style.marginBottom = '20px';
+    msg.innerHTML = '<strong>🔒 Votaciones Cerradas</strong><br>El administrador ha bloqueado la edición o creación de predicciones.';
+    votingFightsContainer.appendChild(msg);
+  }
+
   const pendingFights = state.fights.filter(f => f.status === 'pending');
   if (pendingFights.length === 0) {
     votingFightsContainer.innerHTML = '<p style="color:var(--success);">No hay peleas pendientes de predicción.</p>';
@@ -233,19 +251,21 @@ function renderVoteFights() {
         <span style="color:#ff6b6b">${f.fighterA}</span> VS <span style="color:#4ecdc4">${f.fighterB}</span>
       </div>
       <div class="vote-controls">
-        <select id="vote-winner-${f.id}">
+        <select id="vote-winner-${f.id}" ${!isVotingOpen ? 'disabled' : ''}>
           <option value="">Ganador...</option>
           <option value="A">${f.fighterA}</option>
           <option value="B">${f.fighterB}</option>
           <option value="empate">Empate</option>
         </select>
-        <select id="vote-reason-${f.id}">
+        <select id="vote-reason-${f.id}" ${!isVotingOpen ? 'disabled' : ''}>
           <option value="">Razón...</option>
           <option value="KO">KO</option>
           <option value="TKO">TKO</option>
           <option value="Puntos">Por Puntos</option>
         </select>
-        <button class="btn btn-secondary btn-save-vote" data-fight-id="${f.id}">Guardar</button>
+        <button class="btn btn-secondary btn-save-vote" data-fight-id="${f.id}" ${!isVotingOpen ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+          ${isVotingOpen ? 'Guardar' : 'Cerrado'}
+        </button>
       </div>
     `;
     votingFightsContainer.appendChild(card);
@@ -404,9 +424,11 @@ if (formSettings) {
   formSettings.addEventListener('submit', async (e) => {
     e.preventDefault();
     const val = parseInt(document.getElementById('admin-base-bet').value);
+    const votingEnabled = document.getElementById('admin-voting-enabled').checked;
     if (val > 0) {
       await loadState();
       state.settings.baseBet = val;
+      state.settings.votingEnabled = votingEnabled;
       try {
         await saveState(API_ADMIN_URL);
         showToast('Configuración actualizada');
